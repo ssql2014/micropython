@@ -44,38 +44,17 @@ make BOARD=EK_RA8P1 USE_FSP_QSPI=0 -j8
 RA8P1-aware. The Makefile filters `ra_adc.c`, `ra_dac.c`, `ra_flash.c`,
 `ra_icu.c` out of the RA8P1 build.
 
-### ⚠ Known build prerequisite — `lib/fsp` needs RA8P1 BSP files
+### lib/fsp version
 
-Upstream MicroPython's `lib/fsp` submodule points to FSP v6.2.0, which
-**does not include RA8P1 BSP files** (`ra/fsp/src/bsp/mcu/ra8p1/`). A
-build from a fresh clone of *this* fork therefore fails at qstr collection
-with:
+This fork's `lib/fsp` submodule is pinned to Renesas FSP **v6.4.0**
+(commit `40bbaa11`), which is the first FSP release that includes RA8P1
+BSP support.  Upstream MicroPython master pins `lib/fsp` to v6.2.0
+which predates RA8P1, so building `BOARD=EK_RA8P1` against
+upstream-master MicroPython without first advancing this submodule
+will fail with `bsp_override.h: No such file or directory`.
 
-```
-fatal error: ../../../ra/fsp/src/bsp/mcu/ra8p1/bsp_override.h: No such file or directory
-```
-
-To resolve, populate `lib/fsp/ra/fsp/src/bsp/mcu/ra8p1/` and the matching
-`R7KA8P1KF_*.h` device headers from a Renesas FSP release that includes
-RA8P1 (FSP 6.4.0+).  Two practical options:
-
-1. **Pull from a Renesas-FSP branch that has RA8P1**: in `lib/fsp/`,
-   `git fetch && git checkout <commit_with_ra8p1>` then return to the
-   port and rebuild.  This leaves the submodule pointer dirty in this
-   fork — that's fine for local development.
-2. **Vendor the RA8P1 BSP files alongside the port**: copy the relevant
-   `ra/fsp/src/bsp/mcu/ra8p1/*.h/.c` and CMSIS device headers into
-   `ports/renesas-ra/boards/EK_RA8P1/` and add a Makefile path override.
-   More work but makes the port self-contained.
-
-This is the same limitation that prevents the upstream renesas-ra CI
-matrix from including EK_RA8P1 directly — the FSP submodule version
-needs to be advanced (or split per-board) for RA8 support.
-
-For the development host that produced this fork, the local
-`lib/fsp` checkout has the RA8P1 BSP files in place from a prior
-manual sync; a fresh clone elsewhere won't unless one of the above
-options is followed.
+If you cherry-pick this port onto a different MicroPython base, make
+sure the `lib/fsp` submodule is at v6.4.0 or newer.
 
 ## Flashing
 
