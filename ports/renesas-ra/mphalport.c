@@ -39,6 +39,10 @@
 #include "uart.h"
 #include "rng.h"
 
+#if MICROPY_HW_USE_RTT_REPL
+#include "SEGGER_RTT.h"
+#endif
+
 #if MICROPY_HW_ENABLE_INTERNAL_FLASH_STORAGE
 void flash_cache_commit(void);
 #endif
@@ -78,7 +82,7 @@ uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
         ret |= MP_STREAM_POLL_WR;
     }
     #endif
-    #if MICROPY_PY_OS_DUPTERM
+    #if MICROPY_PY_OS_DUPTERM && (!defined(MICROPY_RA8P1_BRINGUP_NO_DUPTERM) || (MICROPY_RA8P1_BRINGUP_NO_DUPTERM == 0))
     ret |= mp_os_dupterm_poll(poll_flags);
     #endif
     return ret;
@@ -99,13 +103,30 @@ int mp_hal_stdin_rx_chr(void) {
         if (c != -1) {
             return c;
         }
+
+        #if MICROPY_HW_USE_RTT_REPL
+        if (SEGGER_RTT_HasKey()) {
+            int k = SEGGER_RTT_GetKey();
+            if (k >= 0) {
+                return k;
+            }
+        }
+        #endif
+
         #if MICROPY_PY_OS_DUPTERM
         int dupterm_c = mp_os_dupterm_rx_chr();
         if (dupterm_c >= 0) {
             return dupterm_c;
         }
         #endif
+        #if MICROPY_HW_USE_RTT_REPL
+        // Don't sleep indefinitely — RTT has no IRQ, so we must poll.
+        // Use BSP software delay rather than mp_event_wait_ms which can
+        // dispatch into uninitialized event handlers during bring-up.
+        R_BSP_SoftwareDelay(2, BSP_DELAY_UNITS_MILLISECONDS);
+        #else
         mp_event_wait_indefinite();
+        #endif
     }
 }
 
@@ -113,6 +134,12 @@ int mp_hal_stdin_rx_chr(void) {
 mp_uint_t mp_hal_stdout_tx_strn(const char *str, mp_uint_t len) {
     mp_uint_t ret = len;
     bool did_write = false;
+
+    #if MICROPY_HW_USE_RTT_REPL
+    SEGGER_RTT_Write(0, str, len);
+    did_write = true;
+    #endif
+
     #if MICROPY_HW_ENABLE_UART_REPL
     if (MP_STATE_PORT(pyb_stdio_uart) != NULL) {
         uart_tx_strn(MP_STATE_PORT(pyb_stdio_uart), str, len);
@@ -128,7 +155,7 @@ mp_uint_t mp_hal_stdout_tx_strn(const char *str, mp_uint_t len) {
     }
     #endif
 
-    #if MICROPY_PY_OS_DUPTERM
+    #if MICROPY_PY_OS_DUPTERM && (!defined(MICROPY_RA8P1_BRINGUP_NO_DUPTERM) || (MICROPY_RA8P1_BRINGUP_NO_DUPTERM == 0))
     int dupterm_res = mp_os_dupterm_tx_strn(str, len);
     if (dupterm_res >= 0) {
         did_write = true;

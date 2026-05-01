@@ -59,6 +59,7 @@ CROSS_COMPILE ?= arm-none-eabi-
 
 INC += -imacros boards/compiler_barrier.h
 INC += -I.
+INC += -Istub_inc
 INC += -Ifsp_cfg
 INC += -I$(TOP)
 INC += -I$(BUILD)
@@ -72,7 +73,7 @@ INC += -I$(TOP)/lib/tinyusb/hw
 INC += -I$(TOP)/lib/tinyusb/src
 INC += -I$(TOP)/shared/tinyusb
 INC += -Ilwip_inc
-ifeq ($(CMSIS_MCU),$(filter $(CMSIS_MCU),RA4M1 RA4W1 RA6M1 RA6M2 RA6M5))
+ifeq ($(CMSIS_MCU),$(filter $(CMSIS_MCU),RA4M1 RA4W1 RA6M1 RA6M2 RA6M5 RA8P1))
 INC += -Ira
 endif
 INC += -I$(BOARD_DIR)/ra_gen
@@ -108,9 +109,12 @@ CFLAGS_MCU_RA4W1 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4
 CFLAGS_MCU_RA6M1 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4
 CFLAGS_MCU_RA6M2 = $(CFLAGS_CORTEX_M) -mtune=cortex-m4 -mcpu=cortex-m4
 CFLAGS_MCU_RA6M5 = $(CFLAGS_CORTEX_M) -mtune=cortex-m33 -mcpu=cortex-m33
+CFLAGS_MCU_RA8P1 = $(CFLAGS_CORTEX_M) -mtune=cortex-m85 -mcpu=cortex-m85 -D__ARM_ARCH=801 
 
-ASFLAGS += $(CFLAGS_CORTEX_M) -mcpu=cortex-$(MCU_SERIES)
-CFLAGS += $(INC) -Wall -Wpointer-arith -Werror -Wdouble-promotion -Wfloat-conversion -std=gnu99 $(CFLAGS_EXTRA)
+ASFLAGS += $(filter-out -mtune=%,$(CFLAGS_MCU_$(CMSIS_MCU)))
+CFLAGS += $(INC) -Wall
+QSTR_GEN_CFLAGS += $(INC)
+
 #CFLAGS += -D$(CMSIS_MCU)
 CFLAGS += $(CFLAGS_MCU_$(CMSIS_MCU))
 CFLAGS += $(COPT)
@@ -283,14 +287,16 @@ HAL_SRC_C += $(addprefix $(HAL_DIR)/ra/fsp/src/bsp/mcu/all/,\
 	bsp_io.c \
 	bsp_irq.c \
 	bsp_register_protection.c \
-	bsp_rom_registers.c \
 	bsp_sbrk.c \
+	bsp_sdram.c \
 	bsp_security.c \
 	)
 
 HAL_SRC_C += $(addprefix $(HAL_DIR)/ra/fsp/src/,\
 	r_ioport/r_ioport.c \
+	r_glcdc/r_glcdc.c \
 	r_sci_uart/r_sci_uart.c \
+	r_sci_b_uart/r_sci_b_uart.c \
 	)
 
 CFLAGS_FSP = -Wno-unused-variable -Wno-unused-function
@@ -326,7 +332,7 @@ HAL_SRC_C += $(HAL_DIR)/ra/fsp/src/r_flash_hp/r_flash_hp.c
 endif
 endif
 
-ifeq ($(CMSIS_MCU),$(filter $(CMSIS_MCU),RA4M1 RA4W1 RA6M1 RA6M2 RA6M5))
+ifeq ($(CMSIS_MCU),$(filter $(CMSIS_MCU),RA4M1 RA4W1 RA6M1 RA6M2 RA6M5 RA8P1))
 HAL_SRC_C += $(addprefix ra/,\
 	ra_adc.c \
 	ra_dac.c \
@@ -344,6 +350,20 @@ HAL_SRC_C += $(addprefix ra/,\
 	ra_utils.c \
 	)
 
+endif
+
+ifeq ($(CMSIS_MCU),RA8P1)
+# RA8P1 ports in progress. Un-filter as each ra_*.c gains an RA8P1 branch.
+# Done: ra_gpt.c (Task #1), ra_i2c.c (Task #2 — uses r_iic_master since FSP 6.4.0
+#   quickstart for EK-RA8P1 selects r_iic_master, not r_iic_b_master, despite RA8P1
+#   nominally being a "_b" peripheral family).
+# TODO: ra_adc.c (r_adc_b), ra_dac.c (r_dac_b), ra_flash.c, ra_icu.c.
+HAL_SRC_C := $(filter-out ra/ra_adc.c ra/ra_dac.c ra/ra_flash.c ra/ra_icu.c,$(HAL_SRC_C))
+SRC_C := $(filter-out machine_adc.c extint.c flash.c flashbdev.c storage.c modrenesas.c,$(SRC_C))
+SRC_C += ra8p1_display.c
+SRC_C += lib/SEGGER_RTT/SEGGER_RTT.c lib/SEGGER_RTT/SEGGER_RTT_printf.c
+INC += -I$(TOP)/ports/renesas-ra/lib/SEGGER_RTT
+SRC_O += setjmp_arm.o
 endif
 
 ifeq ($(MICROPY_HW_ENABLE_RNG),1)
@@ -395,10 +415,10 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_CXX:.cpp=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_O))
 OBJ += $(BUILD)/pins_$(BOARD).o
 
-ifeq ($(CMSIS_MCU),RA6M5)
+ifeq ($(CMSIS_MCU),$(filter $(CMSIS_MCU),RA6M5 RA8P1))
 $(BUILD)/shared/runtime/gchelper_thumb2.o: $(TOP)/shared/runtime/gchelper_thumb2.s
-	$(ECHO) "AS $<"
-	$(Q)$(AS) $(ASFLAGS) -o $@ $<
+	$(ECHO) "CC $<"
+	$(Q)$(CC) $(filter-out -mtune=%,$(CFLAGS_MCU_$(CMSIS_MCU))) -c -o $@ $<
 endif
 
 # This file contains performance critical functions so turn up the optimisation
@@ -468,6 +488,9 @@ AF_FILE = boards/ra6m2_af.csv
 endif
 ifeq ($(CMSIS_MCU),$(filter $(CMSIS_MCU),RA6M5))
 AF_FILE = boards/ra6m5_af.csv
+endif
+ifeq ($(CMSIS_MCU),$(filter $(CMSIS_MCU),RA8P1))
+AF_FILE = boards/ra8p1_af.csv
 endif
 GEN_PINS_SRC = $(BUILD)/pins_$(BOARD).c
 GEN_PINS_HDR = $(HEADER_BUILD)/pins.h

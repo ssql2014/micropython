@@ -73,6 +73,9 @@ and this is (The Lazy way)
 #elif defined(RA6M5)
 #define GPT_CH_SIZE 10
 #define CH_GAP 0
+#elif defined(RA8P1)
+#define GPT_CH_SIZE 14
+#define CH_GAP 0
 #else
 #error "CMSIS MCU Series is not specified."
 #endif
@@ -134,6 +137,21 @@ static R_GPT0_Type *gpt_regs[GPT_CH_SIZE] = {
     R_GPT7,     // GPT167 General PWM Timer 7  (16-bit)
     R_GPT8,     // GPT168 General PWM Timer 8  (16-bit)
     R_GPT9,     // GPT169 General PWM Timer 9  (16-bit)
+    #elif defined(RA8P1)
+    R_GPT0,     // GPT320  General PWM Timer 0  (32-bit)
+    R_GPT1,     // GPT321  General PWM Timer 1  (32-bit)
+    R_GPT2,     // GPT322  General PWM Timer 2  (32-bit)
+    R_GPT3,     // GPT323  General PWM Timer 3  (32-bit)
+    R_GPT4,     // GPT164  General PWM Timer 4  (16-bit)
+    R_GPT5,     // GPT165  General PWM Timer 5  (16-bit)
+    R_GPT6,     // GPT166  General PWM Timer 6  (16-bit)
+    R_GPT7,     // GPT167  General PWM Timer 7  (16-bit)
+    R_GPT8,     // GPT168  General PWM Timer 8  (16-bit)
+    R_GPT9,     // GPT169  General PWM Timer 9  (16-bit)
+    R_GPT10,    // GPT1610 General PWM Timer 10 (16-bit)
+    R_GPT11,    // GPT1611 General PWM Timer 11 (16-bit)
+    R_GPT12,    // GPT1612 General PWM Timer 12 (16-bit)
+    R_GPT13,    // GPT1613 General PWM Timer 13 (16-bit)
     #else
     #error "CMSIS MCU Series is not specified."
     #endif
@@ -280,6 +298,39 @@ static const ra_af_pin_t ra_gpt_timer_pins[] = {
     { AF_GPT2, 8,  P106 }, { AF_GPT2, 8,  P604 },                                               // GTIOC8B
     { AF_GPT2, 9,  P411 },                                                                      // GTIOC9A
     { AF_GPT2, 9,  P410 },                                                                      // GTIOC9B
+    #elif defined(RA8P1)
+    // EK-RA8P1 GTIOC alternate-function pin map; extracted from FSP-generated
+    // boards/EK_RA8P1/ra_cfg.txt for R7KA8P1KFLCAC (289-pin LFBGA).
+    // Some pins overlap with display/SWD/etc — the alternate-function selector
+    // (PFS.PSEL) decides which function is active at runtime.
+    { AF_GPT2,  0,  P211 }, { AF_GPT2,  0,  P213 }, { AF_GPT2,  0,  P415 }, { AF_GPT2,  0,  P507 }, { AF_GPT2,  0,  P512 },  // GTIOC0A
+    { AF_GPT2,  0,  P210 }, { AF_GPT2,  0,  P212 }, { AF_GPT2,  0,  P414 }, { AF_GPT2,  0,  P508 }, { AF_GPT2,  0,  P511 },  // GTIOC0B
+    { AF_GPT2,  1,  P105 }, { AF_GPT2,  1,  P209 }, { AF_GPT2,  1,  P405 }, { AF_GPT2,  1,  P509 },  // GTIOC1A
+    { AF_GPT2,  1,  P104 }, { AF_GPT2,  1,  P208 }, { AF_GPT2,  1,  P406 }, { AF_GPT2,  1,  P510 },  // GTIOC1B
+    { AF_GPT2,  2,  P103 }, { AF_GPT2,  2,  P113 }, { AF_GPT2,  2,  P713 }, { AF_GPT2,  2,  PD06 },  // GTIOC2A
+    { AF_GPT2,  2,  P102 }, { AF_GPT2,  2,  P114 }, { AF_GPT2,  2,  P712 }, { AF_GPT2,  2,  PD05 },  // GTIOC2B
+    { AF_GPT2,  3,  P300 }, { AF_GPT2,  3,  P403 }, { AF_GPT2,  3,  P912 }, { AF_GPT2,  3,  PD04 },  // GTIOC3A
+    { AF_GPT2,  3,  P112 }, { AF_GPT2,  3,  P404 }, { AF_GPT2,  3,  P911 }, { AF_GPT2,  3,  PD03 },  // GTIOC3B
+    { AF_GPT2,  4,  P302 }, { AF_GPT2,  4,  P610 }, { AF_GPT2,  4,  PA05 },  // GTIOC4A
+    { AF_GPT2,  4,  P301 }, { AF_GPT2,  4,  P611 }, { AF_GPT2,  4,  PA04 },  // GTIOC4B
+    { AF_GPT2,  5,  P115 }, { AF_GPT2,  5,  P700 }, { AF_GPT2,  5,  P915 },  // GTIOC5A
+    { AF_GPT2,  5,  P609 }, { AF_GPT2,  5,  P701 }, { AF_GPT2,  5,  P914 },  // GTIOC5B
+    { AF_GPT2,  6,  P400 }, { AF_GPT2,  6,  P601 }, { AF_GPT2,  6,  P702 }, { AF_GPT2,  6,  PA11 },  // GTIOC6A
+    { AF_GPT2,  6,  P401 }, { AF_GPT2,  6,  P600 }, { AF_GPT2,  6,  P703 }, { AF_GPT2,  6,  PA12 },  // GTIOC6B
+    { AF_GPT2,  7,  P304 }, { AF_GPT2,  7,  P603 }, { AF_GPT2,  7,  PA07 }, { AF_GPT2,  7,  PA15 },  // GTIOC7A
+    { AF_GPT2,  7,  P303 }, { AF_GPT2,  7,  P602 }, { AF_GPT2,  7,  P813 }, { AF_GPT2,  7,  PA06 },  // GTIOC7B
+    { AF_GPT2,  8,  P101 }, { AF_GPT2,  8,  P107 }, { AF_GPT2,  8,  P605 }, { AF_GPT2,  8,  P815 },  // GTIOC8A
+    { AF_GPT2,  8,  P100 }, { AF_GPT2,  8,  P106 }, { AF_GPT2,  8,  P604 }, { AF_GPT2,  8,  P814 },  // GTIOC8B
+    { AF_GPT2,  9,  P111 }, { AF_GPT2,  9,  P411 }, { AF_GPT2,  9,  P612 }, { AF_GPT2,  9,  PB06 },  // GTIOC9A
+    { AF_GPT2,  9,  P110 }, { AF_GPT2,  9,  P410 }, { AF_GPT2,  9,  P613 }, { AF_GPT2,  9,  PB07 },  // GTIOC9B
+    { AF_GPT2, 10,  P109 }, { AF_GPT2, 10,  P408 }, { AF_GPT2, 10,  P810 }, { AF_GPT2, 10,  PA13 },  // GTIOC10A
+    { AF_GPT2, 10,  P108 }, { AF_GPT2, 10,  P407 }, { AF_GPT2, 10,  P811 }, { AF_GPT2, 10,  PA14 },  // GTIOC10B
+    { AF_GPT2, 11,  P711 }, { AF_GPT2, 11,  P800 }, { AF_GPT2, 11,  P812 }, { AF_GPT2, 11,  P903 },  // GTIOC11A
+    { AF_GPT2, 11,  P500 }, { AF_GPT2, 11,  P710 }, { AF_GPT2, 11,  P801 }, { AF_GPT2, 11,  P904 },  // GTIOC11B
+    { AF_GPT2, 12,  P501 }, { AF_GPT2, 12,  P715 }, { AF_GPT2, 12,  P802 }, { AF_GPT2, 12,  P909 },  // GTIOC12A
+    { AF_GPT2, 12,  P502 }, { AF_GPT2, 12,  P714 }, { AF_GPT2, 12,  P803 }, { AF_GPT2, 12,  P908 },  // GTIOC12B
+    { AF_GPT2, 13,  P515 }, { AF_GPT2, 13,  P804 }, { AF_GPT2, 13,  P807 }, { AF_GPT2, 13,  P907 },  // GTIOC13A
+    { AF_GPT2, 13,  P513 }, { AF_GPT2, 13,  P514 }, { AF_GPT2, 13,  P808 }, { AF_GPT2, 13,  P906 },  // GTIOC13B
     #else
     #error "CMSIS MCU Series is not specified."
     #endif
@@ -346,6 +397,8 @@ void ra_gpt_timer_set_freq(uint32_t ch, float freq) {
     if (ch <= 3) { // 32bit
     #elif defined(RA6M1) || defined(RA6M2) || defined(RA6M3)
     if (1) { // all is 32bit
+    #elif defined(RA8P1)
+    if (ch <= 3) { // RA8P1: GPT0..GPT3 are 32-bit, GPT4..GPT13 are 16-bit
     #else
     #error What is the width of the timer? (How many bits)
         #endif
@@ -539,11 +592,12 @@ void ra_gpt_timer_init(uint32_t pwm_pin, uint32_t ch, uint8_t id, uint32_t duty,
     if (ch <= 7) {
     #elif defined(RA6M5)
     if (ch <= 9) {
+    #elif defined(RA8P1)
+    if (ch <= 13) {
     #else
     #error Choose proper clock enable BIT!
         #endif
-        #ifdef RA6M5
-        // R_MSTP_MSTPCRE_MSTPE22_Msk - R_MSTP_MSTPCRE_MSTPE31_Msk
+        #if defined(RA6M5) || defined(RA8P1)
         ra_mstpcre_start(1UL << (31 - ch));
         #else
         ra_mstpcrd_start(R_MSTP_MSTPCRD_MSTPD5_Msk);
@@ -610,10 +664,12 @@ void ra_gpt_timer_deinit(uint32_t pwm_pin, uint32_t ch, uint8_t id) {
     if (ch <= 7) {
     #elif defined(RA6M5)
     if (ch <= 9) {
+    #elif defined(RA8P1)
+    if (ch <= 13) {
     #else
     #error Choose proper clock enable BIT!
         #endif
-        #ifdef RA6M5
+        #if defined(RA6M5) || defined(RA8P1)
         ra_mstpcre_stop(1UL << (31 - ch));
         #else
         ra_mstpcrd_stop(R_MSTP_MSTPCRD_MSTPD5_Msk);

@@ -22,6 +22,16 @@ void R_BSP_WarmStart(bsp_warm_start_event_t event) {
 
         // Configure pins.
         R_IOPORT_Open(&g_ioport_ctrl, &g_bsp_pin_cfg);
+
+        // Note: previously this hook contained an RA8P1-specific manual
+        // MSTP-release for SCI8 (via PRCR unlock + MSTPCRB write).  Removed
+        // because it was speculative — the actual root cause of the
+        // UART_BYTES=0 issue turned out to be the J-Link OB CDC bridge on
+        // the EK-RA8P1 board not delivering bytes to the host even from
+        // working SCI8 transmits (proven via Renesas factory firmware also
+        // emitting 0 bytes from VCOM despite SCI8 module-stop being clear).
+        // The REPL is now routed through SEGGER RTT (over SWD) instead of
+        // SCI8 VCOM — see MICROPY_HW_USE_RTT_REPL in mpconfigboard.h.
     }
 }
 

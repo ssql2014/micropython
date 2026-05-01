@@ -38,7 +38,11 @@
 #if MICROPY_PY_MACHINE_I2C
 
 #define DEFAULT_I2C_FREQ (400000)
-#define DEFAULT_I2C_TIMEOUT (1000)
+// 50 ms per transfer.  Real devices ACK in microseconds, so this only
+// matters for empty-bus / NACK probes (e.g. i2c.scan() walking all 127
+// addresses without a device on the bus — at 1000ms that's a 2-minute
+// lockup; at 50ms it's ~6 seconds, completable).
+#define DEFAULT_I2C_TIMEOUT (50)
 
 typedef struct _machine_i2c_obj_t {
     mp_obj_base_t base;

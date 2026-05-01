@@ -59,10 +59,14 @@
 #include "timer.h"
 #include "led.h"
 #include "pin.h"
+#if !MICROPY_RA8P1_BRINGUP_NO_EXTINT
 #include "extint.h"
+#endif
 #include "usrsw.h"
 #include "rtc.h"
+#if !MICROPY_RA8P1_BRINGUP_NO_STORAGE
 #include "storage.h"
+#endif
 #if MICROPY_PY_LWIP
 #include "lwip/init.h"
 #include "lwip/apps/mdns.h"
@@ -73,7 +77,104 @@
 #endif
 #include "extmod/modnetwork.h"
 
+#if MICROPY_RA8P1_BRINGUP_DISPLAY_TEST
+#include "common_data.h"
+#endif
+
 #define RA_EARLY_PRINT  1       /* for enabling mp_print in boardctrl. */
+
+#if MICROPY_RA8P1_BRINGUP_DISPLAY_TEST
+
+#ifndef MICROPY_RA8P1_BRINGUP_DISPLAY_DEMO
+#define MICROPY_RA8P1_BRINGUP_DISPLAY_DEMO (1)
+#endif
+
+#define RA8P1_DEMO_W   1024u
+#define RA8P1_DEMO_H   600u
+
+static const uint32_t ra8p1_demo_bands[8] = {
+    0x00FF0000u,  /* RED     */
+    0x00FF8000u,  /* ORANGE  */
+    0x00FFFF00u,  /* YELLOW  */
+    0x0000FF00u,  /* GREEN   */
+    0x0000FFFFu,  /* CYAN    */
+    0x000000FFu,  /* BLUE    */
+    0x008000FFu,  /* INDIGO  */
+    0x00FF00FFu,  /* MAGENTA */
+};
+
+#if MICROPY_RA8P1_BRINGUP_DISPLAY_DEMO
+static void ra8p1_demo_paint(uint32_t *fb, uint32_t phase) {
+    /* 8 vertical color bands sliding by `phase` pixels, with diagonal
+     * brightness sweep that wraps with phase.  About 600k pixel writes per
+     * call; M85 @200 MHz handles this in well under a frame at 60Hz. */
+    const uint32_t W = RA8P1_DEMO_W;
+    const uint32_t H = RA8P1_DEMO_H;
+    const uint32_t band_px = W / 8u;
+    for (uint32_t y = 0; y < H; ++y) {
+        uint32_t *row = fb + (uint32_t)y * W;
+        for (uint32_t x = 0; x < W; ++x) {
+            uint32_t band = (((x + phase) / band_px)) & 0x7u;
+            uint32_t c = ra8p1_demo_bands[band];
+            /* Brightness 0..255 from a slowly-rotating diagonal */
+            uint32_t s = ((x + y + (phase << 1)) >> 2) & 0xFFu;
+            /* Simple triangle so center of band is brightest */
+            uint32_t shade = (s < 128u) ? (s * 2u) : ((255u - s) * 2u);
+            uint32_t r = (((c >> 16) & 0xFFu) * shade) >> 8;
+            uint32_t g = (((c >>  8) & 0xFFu) * shade) >> 8;
+            uint32_t b = (( c        & 0xFFu) * shade) >> 8;
+            row[x] = (r << 16) | (g << 8) | b;
+        }
+    }
+}
+#endif
+
+static void ra8p1_display_smoke_test(void) {
+    (void)R_IOPORT_Open(&g_ioport_ctrl, &g_bsp_pin_cfg);
+    R_BSP_SdramInit(true);
+
+    fsp_err_t err = g_display.p_api->open(g_display.p_ctrl, g_display.p_cfg);
+    if (err != FSP_SUCCESS && err != FSP_ERR_ALREADY_OPEN) {
+        return;
+    }
+
+#if MICROPY_RA8P1_BRINGUP_DISPLAY_DEMO
+    /* Paint frame 0, then start scan-out, then animate by alternating buffers. */
+    uint32_t *fb0 = (uint32_t *)&g_framebuffer[0][0];
+    uint32_t *fb1 = (uint32_t *)&g_framebuffer[1][0];
+
+    ra8p1_demo_paint(fb0, 0u);
+    (void)g_display.p_api->start(g_display.p_ctrl);
+
+    /* Bounded animation: ~600 frames so REPL gets a chance after the demo. */
+    for (uint32_t frame = 1; frame < 600u; ++frame) {
+        uint32_t *back = (frame & 1u) ? fb1 : fb0;
+        ra8p1_demo_paint(back, frame * 6u);
+        /* Hand the back-buffer to GLCDC for the next vsync. */
+        (void)g_display.p_api->bufferChange(g_display.p_ctrl,
+            (uint8_t *)back, DISPLAY_FRAME_LAYER_1);
+        /* Crude pacing — bufferChange is honored at next vsync (~60Hz). */
+        R_BSP_SoftwareDelay(15, BSP_DELAY_UNITS_MILLISECONDS);
+    }
+#else
+    /* Plain solid-color smoke (red) - kept as fallback. */
+    uint32_t *fb = (uint32_t *)&g_framebuffer[0][0];
+    size_t pixels = sizeof(g_framebuffer[0]) / sizeof(uint32_t);
+    for (size_t i = 0; i < pixels; ++i) {
+        fb[i] = 0x00ff0000u;
+    }
+    (void)g_display.p_api->start(g_display.p_ctrl);
+#endif
+}
+#endif
+
+#if defined(BSP_MCU_R7KA8P1KFLCAC)
+static volatile uint8_t ra8p1_loop_tx[] = {0x55, 0xaa, 0x33, 0xcc, 'L', 'O', 'O', 'P'};
+static volatile uint8_t ra8p1_loop_rx[16];
+static volatile uint32_t ra8p1_loop_rx_count;
+static volatile uint32_t ra8p1_loop_elapsed_ms;
+static volatile int ra8p1_loop_errcode;
+#endif
 
 #if MICROPY_PY_THREAD
 static pyb_thread_t pyb_thread_main;
@@ -88,6 +189,12 @@ static uint8_t machine_uart_repl_rxbuf[MICROPY_HW_UART_REPL_RXBUF];
 #endif
 
 void MP_NORETURN __fatal_error(const char *msg) {
+#if defined(BSP_MCU_R7KA8P1KFLCAC)
+    (void)msg;
+    for (;;) {
+        __asm volatile ("nop");
+    }
+#else
     for (volatile uint delay = 0; delay < 1000000; delay++) {
     }
     led_state(1, 1);
@@ -101,10 +208,10 @@ void MP_NORETURN __fatal_error(const char *msg) {
         for (volatile uint delay = 0; delay < 1000000; delay++) {
         }
         if (i >= 16) {
-            // to conserve power
             __WFI();
         }
     }
+#endif
 }
 
 void nlr_jump_fail(void *val) {
@@ -235,21 +342,32 @@ int main(void) {
     pyb_thread_init(&pyb_thread_main);
     #endif
     pendsv_init();
+    #if MICROPY_HW_USE_RTT_REPL
+    // RTT must be initialised before any mp_hal_stdout_tx_strn call so the REPL
+    // banner reaches the host via SWD (the EK-RA8P1 J-Link OB CDC bridge does
+    // not deliver bytes — see board README for details).
+    extern void SEGGER_RTT_Init(void);
+    SEGGER_RTT_Init();
+    #endif
     led_init();
     #if MICROPY_HW_HAS_SWITCH
     switch_init0();
     #endif
     machine_init();
+
+    #if MICROPY_RA8P1_BRINGUP_DISPLAY_TEST
+    ra8p1_display_smoke_test();
+    #endif
     #if MICROPY_HW_ENABLE_RTC
     rtc_init_start(false);
     #endif
     uart_init0();
     spi_init0();
-    #if MICROPY_HW_ENABLE_STORAGE
+    #if MICROPY_HW_ENABLE_STORAGE && !MICROPY_RA8P1_BRINGUP_NO_STORAGE
     storage_init();
     #endif
 
-    #if defined(MICROPY_HW_UART_REPL)
+    #if defined(MICROPY_HW_UART_REPL) && !MICROPY_HW_USE_RTT_REPL
     // Set up a UART REPL using a statically allocated object
     machine_uart_repl_obj.base.type = &machine_uart_type;
     machine_uart_repl_obj.uart_id = MICROPY_HW_UART_REPL;
@@ -262,6 +380,18 @@ int main(void) {
     MP_STATE_PORT(machine_uart_obj_all)[MICROPY_HW_UART_REPL] = &machine_uart_repl_obj;
     #if RA_EARLY_PRINT
     MP_STATE_PORT(pyb_stdio_uart) = &machine_uart_repl_obj;
+    #endif
+    #if defined(BSP_MCU_R7KA8P1KFLCAC) && MICROPY_RA8P1_BRINGUP_LED_TEST
+    uint32_t led_phase = 0;
+    for (;;) {
+        R_IOPORT_PinWrite(&g_ioport_ctrl, BSP_IO_PORT_06_PIN_00, led_phase ? BSP_IO_LEVEL_HIGH : BSP_IO_LEVEL_LOW);
+        R_IOPORT_PinWrite(&g_ioport_ctrl, BSP_IO_PORT_03_PIN_03, led_phase ? BSP_IO_LEVEL_LOW : BSP_IO_LEVEL_HIGH);
+        R_IOPORT_PinWrite(&g_ioport_ctrl, BSP_IO_PORT_10_PIN_07, led_phase ? BSP_IO_LEVEL_HIGH : BSP_IO_LEVEL_LOW);
+        led_phase ^= 1;
+        for (volatile uint32_t delay = 0; delay < 1200000; ++delay) {
+            __asm__ __volatile__("nop");
+        }
+    }
     #endif
     #endif
 
@@ -294,11 +424,33 @@ soft_reset:
     mp_thread_init();
     #endif
 
-    // Note: stack control relies on main thread being initialised above
+    // RA8P1 cstack-init bring-up note:
+    // FSP startup leaves MSP at the BSP bootstrap stack (~0x22002000), far
+    // below the linker's _estack (0x22100000).  Passing &_estack to
+    // mp_cstack_init_with_top makes mp_cstack_check() see ~1 MB used and raise
+    // RuntimeError("maximum recursion depth exceeded") on the first eval.
+    // Using the runtime MSP with 64 KB headroom matches the actual stack.
+    #if defined(BSP_MCU_R7KA8P1KFLCAC)
+    {
+        uintptr_t actual_sp = __get_MSP();
+        mp_cstack_init_with_top((char *)actual_sp, 0x10000);
+    }
+    #else
     mp_cstack_init_with_top(&_estack, (char *)&_estack - (char *)&_sstack);
+    #endif
 
-    // GC init
+    // GC init — heap in external SDRAM.  Internal 1 MB SRAM has a yet-unknown
+    // failure mode for gc_init at heaps > ~128 KB even though individual
+    // mem32[] writes to that region succeed at runtime.  Hypothesis: gc_init's
+    // initial alloc-table sweep across the full heap range trips something
+    // (cache coherency? unaligned long-stride access?).  SDRAM is uniform and
+    // works — first 5 MB reserved for GLCDC framebuffer, next 2 MB for heap.
+    #if defined(BSP_MCU_R7KA8P1KFLCAC)
+    R_BSP_SdramInit(true);
+    gc_init((char *)0x68500000UL, (char *)0x68700000UL);
+    #else
     gc_init(MICROPY_HEAP_START, MICROPY_HEAP_END);
+    #endif
 
     #if MICROPY_ENABLE_PYSTACK
     static mp_obj_t pystack[384];
@@ -313,18 +465,18 @@ soft_reset:
     // we can run Python scripts (eg boot.py), but anything that is configurable
     // by boot.py must be set after boot.py is run.
 
-    #if defined(MICROPY_HW_UART_REPL)
+    #if defined(MICROPY_HW_UART_REPL) && !MICROPY_HW_USE_RTT_REPL
     MP_STATE_PORT(pyb_stdio_uart) = &machine_uart_repl_obj;
     #else
     MP_STATE_PORT(pyb_stdio_uart) = NULL;
     #endif
-
     readline_init0();
     machine_pin_init();
+    #if !MICROPY_RA8P1_BRINGUP_NO_EXTINT
     extint_init0();
+    #endif
     timer_init0();
-
-    #if MICROPY_HW_ENABLE_I2S
+#if MICROPY_HW_ENABLE_I2S
     machine_i2s_init0();
     #endif
 
@@ -359,7 +511,6 @@ soft_reset:
 
     // Run boot.py (or whatever else a board configures at this stage).
     int boot_res = MICROPY_BOARD_RUN_BOOT_PY(&state);
-
     // Now we initialise sub-systems that need configuration from boot.py,
     // or whose initialisation can be safely deferred until after running
     // boot.py.
