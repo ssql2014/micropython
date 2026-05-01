@@ -31,13 +31,13 @@ static R_MSTP_Type *mstp_reg = R_MSTP;
 
 void ra_mstpcra_stop(uint32_t mod_mask) {
     system_reg->PRCR = 0xa502;
-    system_reg->MSTPCRA |= mod_mask;
+    mstp_reg->MSTPCRA |= mod_mask;
     system_reg->PRCR = 0xa500;
 }
 
 void ra_mstpcra_start(uint32_t mod_mask) {
     system_reg->PRCR = 0xa502;
-    system_reg->MSTPCRA &= ~mod_mask;
+    mstp_reg->MSTPCRA &= ~mod_mask;
     system_reg->PRCR = 0xa500;
 }
 
@@ -48,9 +48,17 @@ void ra_mstpcrb_stop(uint32_t mod_mask) {
 }
 
 void ra_mstpcrb_start(uint32_t mod_mask) {
+#if defined(BSP_MCU_R7KA8P1KFLCAC)
+    volatile uint16_t *prcr = (volatile uint16_t *)0x4001E3FA;
+    volatile uint32_t *mstpcrb = (volatile uint32_t *)0x40203004;
+    *prcr = 0xA502;
+    *mstpcrb &= ~mod_mask;
+    *prcr = 0xA500;
+#else
     system_reg->PRCR = 0xa502;
     mstp_reg->MSTPCRB &= ~mod_mask;
     system_reg->PRCR = 0xa500;
+#endif
 }
 
 void ra_mstpcrc_stop(uint32_t mod_mask) {

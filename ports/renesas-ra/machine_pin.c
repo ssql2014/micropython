@@ -279,6 +279,11 @@ static mp_obj_t machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_
         mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("%q is not supported"), MP_QSTR_IRQ_HIGH_LEVEL);
     }
 
+#if defined(MICROPY_RA8P1_BRINGUP_NO_EXTINT) && (MICROPY_RA8P1_BRINGUP_NO_EXTINT == 1)
+    (void)self;
+    (void)args;
+    mp_raise_msg(&mp_type_NotImplementedError, MP_ERROR_TEXT("Pin.irq disabled during EK_RA8P1 bring-up"));
+#else
     if (n_args > 1 || kw_args->used != 0) {
         // configure irq
         extint_register_pin(self, args[ARG_trigger].u_int,
@@ -287,6 +292,7 @@ static mp_obj_t machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_
 
     // TODO should return an IRQ object
     return mp_const_none;
+#endif
 }
 static MP_DEFINE_CONST_FUN_OBJ_KW(machine_pin_irq_obj, 1, machine_pin_irq);
 

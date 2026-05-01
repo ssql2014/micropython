@@ -104,7 +104,11 @@ static uint update_reset_mode(uint reset_mode) {
 #endif
 
 void boardctrl_before_soft_reset_loop(boardctrl_state_t *state) {
-    #if !MICROPY_HW_USES_BOOTLOADER
+    #if defined(BSP_MCU_R7KA8P1KFLCAC)
+    // Minimal bring-up: skip reset-mode button/LED flow until GPIO/switch path is verified.
+    state->reset_mode = BOARDCTRL_RESET_MODE_NORMAL;
+    return;
+    #elif !MICROPY_HW_USES_BOOTLOADER
     // Update the reset_mode via the default
     // method which uses the board switch/button and LEDs.
     state->reset_mode = update_reset_mode(BOARDCTRL_RESET_MODE_NORMAL);

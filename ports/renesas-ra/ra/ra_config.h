@@ -46,6 +46,12 @@
 #define SCI_TX_BUF_SIZE 128
 #define SCI_RX_BUF_SIZE 256
 #define PCLK         100000000
+#elif defined(RA8P1)
+#define SCI_CH_MAX   10
+#define SCI_CH_NUM   4
+#define SCI_TX_BUF_SIZE 128
+#define SCI_RX_BUF_SIZE 256
+#define PCLK         200000000
 #else
 #error "CMSIS MCU Series is not specified."
 #endif

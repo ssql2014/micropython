@@ -29,7 +29,9 @@
 
 #include "py/runtime.h"
 #include "py/mphal.h"
+#if !defined(MICROPY_RA8P1_BRINGUP_NO_EXTINT) || (MICROPY_RA8P1_BRINGUP_NO_EXTINT == 0)
 #include "extint.h"
+#endif
 #include "pin.h"
 #include "usrsw.h"
 
@@ -116,6 +118,11 @@ static MP_DEFINE_CONST_FUN_OBJ_1(switch_callback_obj, switch_callback);
 /// If `fun` is `None`, then it disables the callback.
 mp_obj_t pyb_switch_callback(mp_obj_t self_in, mp_obj_t callback) {
     MP_STATE_PORT(pyb_switch_callback) = callback;
+#if defined(MICROPY_RA8P1_BRINGUP_NO_EXTINT) && (MICROPY_RA8P1_BRINGUP_NO_EXTINT == 1)
+    (void)self_in;
+    (void)callback;
+    mp_raise_msg(&mp_type_NotImplementedError, MP_ERROR_TEXT("Switch callback disabled during EK_RA8P1 bring-up"));
+#else
     // Init the EXTI each time this function is called, since the EXTI
     // may have been disabled by an exception in the interrupt, or the
     // user disabling the line explicitly.
@@ -125,6 +132,7 @@ mp_obj_t pyb_switch_callback(mp_obj_t self_in, mp_obj_t callback) {
         callback == mp_const_none ? mp_const_none : MP_OBJ_FROM_PTR(&switch_callback_obj),
         true);
     return mp_const_none;
+#endif
 }
 static MP_DEFINE_CONST_FUN_OBJ_2(pyb_switch_callback_obj, pyb_switch_callback);
 

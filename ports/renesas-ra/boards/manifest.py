@@ -1,3 +1,1 @@
-include("$(MPY_DIR)/extmod/asyncio")
-require("dht")
-require("onewire")
+# Minimal manifest - no frozen modules

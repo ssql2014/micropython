@@ -48,6 +48,8 @@ enum CPU_PIN {
     P900 = 0x90, P901, P902, P903, P904, P905, P906, P907, P908, P909, P910, P911, P912, P913, P914, P915,
     PA00 = 0xA0, PA01, PA02, PA03, PA04, PA05, PA06, PA07, PA08, PA09, PA10, PA11, PA12, PA13, PA14, PA15,
     PB00 = 0xB0, PB01, PB02, PB03, PB04, PB05, PB06, PB07, PB08, PB09, PB10, PB11, PB12, PB13, PB14, PB15,
+    PC00 = 0xC0, PC01, PC02, PC03, PC04, PC05, PC06, PC07, PC08, PC09, PC10, PC11, PC12, PC13, PC14, PC15,
+    PD00 = 0xD0, PD01, PD02, PD03, PD04, PD05, PD06, PD07, PD08, PD09, PD10, PD11, PD12, PD13, PD14, PD15,
     PIN_END = 0xff,
 };
 
@@ -128,7 +130,15 @@ enum AF_INDEX {
 #define PMR_MASK    (uint32_t)0x00010000
 #define PSEL_MASK   (uint32_t)0x1f000000
 
+#if defined(BSP_MCU_R7KA8P1KFLCAC)
+#if BSP_TZ_SECURE_BUILD || (BSP_FEATURE_TZ_VERSION == 2 && FSP_PRIV_TZ_USE_SECURE_REGS)
+#define _PWPR               (R_PMISC->PWPRS)
+#else
+#define _PWPR               (R_PMISC->PWPR)
+#endif
+#else
 #define _PWPR               (*(volatile uint8_t *)(R_PFS_BASE + 0x503))
+#endif
 
 #define _PXXPFS(port, bit)  (*(volatile uint32_t *)(R_PFS_BASE + (0x40 * ((uint32_t)port)) + (0x4 * ((uint32_t)bit))))
 #define _PCNTR1(port)       (*(volatile uint32_t *)(R_PORT0_BASE + (0x20 * (port))))

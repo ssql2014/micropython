@@ -33,6 +33,15 @@
 
 #define AGT_CH_SIZE 2
 
+#if defined(RA8P1)
+#ifndef R_AGTX0
+#define R_AGTX0 R_AGT0
+#endif
+#ifndef R_AGTX1
+#define R_AGTX1 R_AGT1
+#endif
+#endif
+
 enum AGT_SOURCE {
     AGT_PCLKB = 0,
     AGT_PCLKB8,
@@ -48,13 +57,13 @@ static R_AGTX0_AGT16_Type *agt_regs[AGT_CH_SIZE] = {
 };
 
 static uint8_t ch_to_irq[AGT_CH_SIZE] = {
-    #if defined(VECTOR_NUMBER_AGT0_INT)
-    VECTOR_NUMBER_AGT0_INT,
+    #if defined(VECTOR_NUMBER_AGTX0_INT)
+    VECTOR_NUMBER_AGTX0_INT,
     #else
     0,
     #endif
-    #if defined(VECTOR_NUMBER_AGT1_INT)
-    VECTOR_NUMBER_AGT1_INT,
+    #if defined(VECTOR_NUMBER_AGTX1_INT)
+    VECTOR_NUMBER_AGTX1_INT,
     #else
     0,
     #endif

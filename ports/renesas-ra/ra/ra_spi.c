@@ -69,7 +69,7 @@ static const ra_af_pin_t mosi_pins[] = {
     { AF_SPI, 1, P203 }, /* MOSIB_A */
     { AF_SPI, 1, P701 }, /* MOSIB_C */
 
-    #elif defined(RA6M5)
+    #elif defined(RA6M5) || defined(RA8P1)
 
     { AF_SPI, 0, P109 }, /* MOSIA_B */
     { AF_SPI, 0, P203 }, /* MOSIA_A */
@@ -110,7 +110,7 @@ static const ra_af_pin_t miso_pins[] = {
     { AF_SPI, 1, P202 }, /* MISOB_A */
     { AF_SPI, 1, P700 }, /* MISOB_C */
 
-    #elif defined(RA6M5)
+    #elif defined(RA6M5) || defined(RA8P1)
 
     { AF_SPI, 0, P110 }, /* MISOA_B */
     { AF_SPI, 0, P202 }, /* MISOA_A */
@@ -151,7 +151,7 @@ static const ra_af_pin_t sck_pins[] = {
     { AF_SPI, 1, P204 }, /* RSPCKB_A */
     { AF_SPI, 1, P702 }, /* RSPCKB_C */
 
-    #elif defined(RA6M5)
+    #elif defined(RA6M5) || defined(RA8P1)
 
     { AF_SPI, 0, P111 }, /* RSPCKA_B */
     { AF_SPI, 0, P204 }, /* RSPCKA_A */
@@ -255,7 +255,7 @@ static const ra_ssl_pin_t ssl_pins[] = {
     { 2, P705 }, /* SSLB2_C */
     { 3, P708 }, /* SSLA3_B */
 
-    #elif defined(RA6M5)
+    #elif defined(RA6M5) || defined(RA8P1)
 
     { 0, P103 }, /* SSLB0_A */
     { 1, P104 }, /* SSLB1_A */
@@ -611,7 +611,7 @@ void ra_spi_init(uint32_t ch, uint32_t mosi, uint32_t miso, uint32_t sck, uint32
     ra_spi_set_pin(sck, false);
     ra_spi_set_pin(cs, false);
 
-    #if defined(RA6M5)
+    #if defined(RA6M5) || defined(RA8P1)
     spi_reg->SPCR3 = 0x00;      // default
     #endif
 

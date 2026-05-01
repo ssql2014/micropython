@@ -133,3 +133,10 @@ void mp_hal_get_mac(int idx, uint8_t buf[6]);
 void mp_hal_set_interrupt_char(int c); // -1 to disable
 
 void mp_hal_get_random(size_t n, uint8_t *buf);
+
+// RA8P1 Cortex-M85 needs DCache cleaning for native code emission
+#if defined(RA8P1)
+#include "core_cm85.h"
+#define MP_HAL_CLEAN_DCACHE(addr, size) SCB_CleanDCache_by_Addr((volatile void *)(addr), (size))
+#define MP_HAL_CLEANINVALIDATE_DCACHE(addr, size) SCB_CleanInvalidateDCache_by_Addr((volatile void *)(addr), (size))
+#endif

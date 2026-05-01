@@ -24,14 +24,18 @@
 
 #include "hal_data.h"
 #include "ra_config.h"
+#if !MICROPY_RA8P1_BRINGUP_NO_STORAGE
 #include "ra_flash.h"
+#endif
 #include "ra_int.h"
 #include "ra_init.h"
 
 void ra_init(void) {
     ra_int_init();
     SysTick_Config(MICROPY_HW_MCU_SYSCLK / 1000);
+#if !MICROPY_RA8P1_BRINGUP_NO_STORAGE
     internal_flash_init();
+#endif
 }
 
 void ra_deinit(void) {
