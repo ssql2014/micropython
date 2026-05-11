@@ -12,7 +12,10 @@
  * Clock assumption: CANFD peripheral clock = 40 MHz (from PLL2 ÷ 6).
  * Recalculate bit timing if the CANFDCLK is different on your board.
  *
- * TODO: Verify CANFD transceiver pin connections on EK-RA8P1 schematic.
+ * Pin connections (verified against ra_cfg.txt):
+ *   CANFD0 CTX0 → P401 (N17)  — enable in FSP pin config when transceiver fitted
+ *   CANFD0 CRX0 → P402 (L14)  — enable in FSP pin config when transceiver fitted
+ * Both pins are disabled by default (no on-board transceiver on EK-RA8P1).
  */
 
 #if defined(RA8P1)
