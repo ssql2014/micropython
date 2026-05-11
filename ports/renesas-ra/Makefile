@@ -353,14 +353,15 @@ HAL_SRC_C += $(addprefix ra/,\
 endif
 
 ifeq ($(CMSIS_MCU),RA8P1)
-# RA8P1 ports in progress. Un-filter as each ra_*.c gains an RA8P1 branch.
-# Done: ra_gpt.c (Task #1), ra_i2c.c (Task #2 — uses r_iic_master since FSP 6.4.0
-#   quickstart for EK-RA8P1 selects r_iic_master, not r_iic_b_master, despite RA8P1
-#   nominally being a "_b" peripheral family).
-# TODO: ra_adc.c (r_adc_b), ra_dac.c (r_dac_b), ra_flash.c, ra_icu.c.
+# ra_adc.c and ra_dac.c replaced by ra8p1_adc.c / ra8p1_dac.c (r_adc_b / r_dac_b).
+# ra_icu.c and ra_flash.c excluded until RA8P1 branches are added.
 HAL_SRC_C := $(filter-out ra/ra_adc.c ra/ra_dac.c ra/ra_flash.c ra/ra_icu.c,$(HAL_SRC_C))
-SRC_C := $(filter-out machine_adc.c extint.c flash.c flashbdev.c storage.c modrenesas.c,$(SRC_C))
-SRC_C += ra8p1_display.c
+HAL_SRC_C += ra/ra8p1_adc.c ra/ra8p1_dac.c ra/ra8p1_canfd.c
+HAL_SRC_C += $(HAL_DIR)/ra/fsp/src/r_adc_b/r_adc_b.c
+HAL_SRC_C += $(HAL_DIR)/ra/fsp/src/r_dac_b/r_dac_b.c
+HAL_SRC_C += $(HAL_DIR)/ra/fsp/src/r_canfd/r_canfd.c
+SRC_C := $(filter-out extint.c flash.c flashbdev.c storage.c modrenesas.c,$(SRC_C))
+SRC_C += machine_can.c ra8p1_display.c
 SRC_C += lib/SEGGER_RTT/SEGGER_RTT.c lib/SEGGER_RTT/SEGGER_RTT_printf.c
 INC += -I$(TOP)/ports/renesas-ra/lib/SEGGER_RTT
 SRC_O += setjmp_arm.o

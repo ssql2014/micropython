@@ -31,7 +31,17 @@
 #define MICROPY_HW_PWM_7B           (pin_P303)  // GTIOC7B = LED2 (Green)
 #define MICROPY_HW_PWM_4A           (pin_P302)  // GTIOC4A — free pin, scope/probe friendly
 #define MICROPY_HW_RTC_SOURCE       (1)     // 0: subclock, 1: mainclock
-#define MICROPY_HW_ENABLE_ADC       (0)
+/* ADC and DAC enabled via ra8p1_adc.c / ra8p1_dac.c (r_adc_b / r_dac_b FSP drivers). */
+#define MICROPY_HW_ENABLE_ADC       (1)
+#define MICROPY_HW_ENABLE_HW_DAC    (1)
+/* DAC output pins on EK-RA8P1 (verify against schematic). */
+#define MICROPY_HW_DAC0             (pin_P014)
+#define MICROPY_HW_DAC1             (pin_P015)
+/* CAN: appended to the port-level MICROPY_PY_MACHINE_EXTRA_GLOBALS in
+ * modmachine.c via MICROPY_BOARD_MACHINE_EXTRA_GLOBALS.
+ * machine_can_type is defined in machine_can.c. */
+#define MICROPY_BOARD_MACHINE_EXTRA_GLOBALS \
+    { MP_ROM_QSTR(MP_QSTR_CAN), MP_ROM_PTR(&machine_can_type) },
 #define MICROPY_HW_HAS_FLASH        (0)
 #define MICROPY_HW_ENABLE_INTERNAL_FLASH_STORAGE (0)
 #define MICROPY_HW_HAS_QSPI_FLASH   (0)

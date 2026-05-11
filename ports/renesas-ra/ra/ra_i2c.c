@@ -714,6 +714,12 @@ bool ra_i2c_action_execute(R_IIC0_Type *i2c_inst, xaction_t *action, bool repeat
             break;
         }
         if (uwTick - start > timeout_ms) {
+            /* Issue stop condition so the bus returns to idle (BBSY=0).
+             * Without this, BBSY stays set and the next ra_i2c_xaction_start
+             * spins 100,000 iterations waiting for the bus to free. */
+            i2c_inst->ICCR2_b.SP = 1;
+            action->m_error  = RA_I2C_ERROR_BUSY;
+            action->m_status = RA_I2C_STATUS_Stopped;
             break;
         }
     }
