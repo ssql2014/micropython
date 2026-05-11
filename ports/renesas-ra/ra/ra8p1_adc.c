@@ -233,13 +233,25 @@ uint16_t ra_adc_read(uint32_t pin) {
     return ra_adc_read_ch(ch);
 }
 
+/* RA8P1 temperature calibration:
+ *   One factory point at 127 °C stored in R_TSN_CAL->TSCDR (lower 16 bits).
+ *   Slope = BSP_FEATURE_TSN_SLOPE = 4000 µV/°C.
+ *   Formula: T = 127 + (V_meas - V_cal127) * 1e6 / slope
+ *   where V = 3.3 * raw / 4096. */
+static float tsn_raw_to_celsius(uint16_t raw) {
+    uint16_t cal127 = (uint16_t)(R_TSN_CAL->TSCDR & BSP_FEATURE_TSN_CALIBRATION32_MASK);
+    float vmax  = (float)(1u << 12);
+    float v127  = 3.3f * (float)cal127 / vmax;
+    float vmeas = 3.3f * (float)raw    / vmax;
+    return 127.0f + (vmeas - v127) * 1000000.0f / (float)BSP_FEATURE_TSN_SLOPE;
+}
+
 int16_t ra_adc_read_itemp(void) {
-    return (int16_t)ra_adc_read_ch(ADC_TEMP);
+    return (int16_t)tsn_raw_to_celsius(ra_adc_read_ch(ADC_TEMP));
 }
 
 float ra_adc_read_ftemp(void) {
-    /* TODO: apply RA8P1 temperature calibration coefficients. */
-    return (float)ra_adc_read_itemp();
+    return tsn_raw_to_celsius(ra_adc_read_ch(ADC_TEMP));
 }
 
 float ra_adc_read_fref(void) {
