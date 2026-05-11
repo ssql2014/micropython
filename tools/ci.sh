@@ -406,7 +406,7 @@ function ci_qemu_build_arm_sabrelite {
 
 function ci_qemu_build_arm_thumb_softfp {
     ci_qemu_build_arm_prepare
-    make BOARD=MPS2_AN385 ${MAKEOPTS} -C ports/qemu test_full
+    make BOARD=MPS2_AN385 ${MAKEOPTS} -C ports/qemu USER_C_MODULES=../../examples/usercmodule test_full
 
     # Test building native .mpy with ARM-M softfp architectures.
     ci_native_mpy_modules_build armv6m
@@ -1066,7 +1066,7 @@ function ci_alif_ae3_build {
     make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_HP submodules
     make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_HE submodules
     make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_DUAL
-    make ${MAKEOPTS} -C ports/alif BOARD=ALIF_ENSEMBLE MCU_CORE=M55_DUAL
+    make ${MAKEOPTS} -C ports/alif BOARD=ALIF_ENSEMBLE MCU_CORE=M55_DUAL USER_C_MODULES=../../examples/usercmodule
 }
 
 function _ci_help {
