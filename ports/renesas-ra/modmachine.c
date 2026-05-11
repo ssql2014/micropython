@@ -61,6 +61,10 @@
 #define MICROPY_PY_MACHINE_SDCARD_ENTRY
 #endif
 
+#ifndef MICROPY_BOARD_MACHINE_EXTRA_GLOBALS
+#define MICROPY_BOARD_MACHINE_EXTRA_GLOBALS
+#endif
+
 #define MICROPY_PY_MACHINE_EXTRA_GLOBALS \
     { MP_ROM_QSTR(MP_QSTR_info),                MP_ROM_PTR(&machine_info_obj) }, \
     { MP_ROM_QSTR(MP_QSTR_sleep),               MP_ROM_PTR(&machine_lightsleep_obj) }, \
@@ -78,6 +82,7 @@
     { MP_ROM_QSTR(MP_QSTR_WDT_RESET),           MP_ROM_INT(PYB_RESET_WDT) }, \
     { MP_ROM_QSTR(MP_QSTR_DEEPSLEEP_RESET),     MP_ROM_INT(PYB_RESET_DEEPSLEEP) }, \
     { MP_ROM_QSTR(MP_QSTR_SOFT_RESET),          MP_ROM_INT(PYB_RESET_SOFT) }, \
+    MICROPY_BOARD_MACHINE_EXTRA_GLOBALS
 
 static uint32_t reset_cause;
 

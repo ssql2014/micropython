@@ -1,0 +1,20 @@
+{
+    "deploy": [
+        "../deploy.md"
+    ],
+    "docs": "",
+    "features": [
+        "ADC",
+        "DAC",
+        "I2C",
+        "SPI",
+        "UART",
+        "QSPI"
+    ],
+    "images": [],
+    "mcu": "ra8p1",
+    "product": "EK-RA8P1",
+    "thumbnail": "",
+    "url": "https://www.renesas.com/us/en/products/microcontrollers-microprocessors/ra-cortex-m-mcus/ek-ra8P1-evaluation-kit-ra8p1",
+    "vendor": "Renesas"
+}

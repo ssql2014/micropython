@@ -744,7 +744,8 @@ int pyexec_file_if_exists(const char *filename) {
         return pyexec_frozen_module(filename, true);
     }
     #endif
-    if (mp_import_stat(filename) != MP_IMPORT_STAT_FILE) {
+    mp_import_stat_t stat = mp_import_stat(filename);
+    if (stat != MP_IMPORT_STAT_FILE) {
         return 1; // success (no file is the same as an empty file executing without fail)
     }
     return pyexec_file(filename);

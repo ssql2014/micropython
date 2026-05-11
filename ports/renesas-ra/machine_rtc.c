@@ -256,6 +256,11 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_datetime_obj, 1, 2, machine_rtc_
 // wakeup(ms, callback=None) - ms should be between 4ms - 2000ms
 // wakeup(wucksel, wut, callback) - not implemented
 mp_obj_t machine_rtc_wakeup(size_t n_args, const mp_obj_t *args) {
+    (void)n_args;
+    (void)args;
+#if MICROPY_RA8P1_BRINGUP_NO_EXTINT
+    mp_raise_NotImplementedError(MP_ERROR_TEXT("RTC.wakeup disabled during EK_RA8P1 bring-up"));
+#else
     bool enable = false;
     mp_int_t ms;
     mp_obj_t callback = mp_const_none;
@@ -291,7 +296,6 @@ mp_obj_t machine_rtc_wakeup(size_t n_args, const mp_obj_t *args) {
     if (n_args >= 2) {
         callback = args[2];
     }
-    // set the callback
     MP_STATE_PORT(pyb_extint_callback)[EXTI_RTC_WAKEUP] = callback;
     pyb_extint_callback_arg[EXTI_RTC_WAKEUP] = MP_OBJ_NEW_SMALL_INT(EXTI_RTC_WAKEUP);
     rtc_wakeup_param = EXTI_RTC_WAKEUP;
@@ -307,6 +311,7 @@ mp_obj_t machine_rtc_wakeup(size_t n_args, const mp_obj_t *args) {
         ra_rtc_period_off();
     }
     return mp_const_none;
+#endif
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_wakeup_obj, 2, 3, machine_rtc_wakeup);
 

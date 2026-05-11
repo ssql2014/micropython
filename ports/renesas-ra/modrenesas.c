@@ -25,11 +25,15 @@
  */
 
 #include "py/runtime.h"
+#if !MICROPY_RA8P1_BRINGUP_NO_STORAGE
 #include "storage.h"
+#endif
 
 static const mp_rom_map_elem_t renesas_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_renesas) },
+#if !MICROPY_RA8P1_BRINGUP_NO_STORAGE
     { MP_ROM_QSTR(MP_QSTR_Flash),    MP_ROM_PTR(&pyb_flash_type) },
+#endif
 };
 static MP_DEFINE_CONST_DICT(renesas_module_globals, renesas_module_globals_table);
 

@@ -34,6 +34,10 @@
 #define ADC_RESOLUTION (12)
 #endif
 
+#if defined(RA8P1)
+#define ADC_RESOLUTION (12)
+#endif
+
 enum ADC14_PIN
 {
     #if defined(RA4M1)
@@ -178,6 +182,39 @@ enum ADC14_PIN
 
     #elif defined(RA6M5)
     // Unit 0
+    AN000 = 0,
+    AN001 = 1,
+    AN002 = 2,
+    AN003 = 3,
+    AN004 = 4,
+    AN005 = 5,
+    AN006 = 6,
+    AN007 = 7,
+    AN008 = 8,
+    AN009 = 9,
+    AN010 = 10,
+    AN012 = 12,
+    AN013 = 13,
+    // Unit 1
+    AN100 = 32,
+    AN101 = 33,
+    AN102 = 34,
+    AN116 = 35,
+    AN117 = 37,
+    AN118 = 38,
+    AN119 = 39,
+    AN120 = 48,
+    AN121 = 49,
+    AN122 = 50,
+    AN123 = 51,
+    AN124 = 52,
+    AN125 = 53,
+    AN126 = 54,
+    AN127 = 55,
+    AN128 = 56,
+
+    #elif defined(RA8P1)
+    // RA8P1 uses same ADC pins as RA6M5
     AN000 = 0,
     AN001 = 1,
     AN002 = 2,

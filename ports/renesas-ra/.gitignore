@@ -1,0 +1,7 @@
+build-*/
+*.bak
+*.bak-*
+.size-baseline-*
+R7FA8P1
+RA8P1_hal.h.bak*
+all

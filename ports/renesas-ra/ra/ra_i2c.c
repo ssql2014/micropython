@@ -86,6 +86,14 @@ static const ra_af_pin_t scl_pins[] = {
     { AF_I2C, 2, P410 },
     { AF_I2C, 2, P415 },
 
+    #elif defined(RA8P1)
+    // EK-RA8P1 IIC SCL pin map; extracted from FSP-generated ra_cfg.txt.
+    { AF_I2C, 0, P408 },
+    { AF_I2C, 0, P410 },
+    { AF_I2C, 1, P512 },
+    { AF_I2C, 2, P515 },
+    { AF_I2C, 2, P709 },
+
     #else
     #error "CMSIS MCU Series is not specified."
     #endif
@@ -129,6 +137,14 @@ static const ra_af_pin_t sda_pins[] = {
     { AF_I2C, 1, P511 },
     { AF_I2C, 2, P409 },
     { AF_I2C, 2, P414 },
+
+    #elif defined(RA8P1)
+    // EK-RA8P1 IIC SDA pin map; extracted from FSP-generated ra_cfg.txt.
+    { AF_I2C, 0, P407 },
+    { AF_I2C, 0, P409 },
+    { AF_I2C, 1, P511 },
+    { AF_I2C, 2, P514 },
+    { AF_I2C, 2, P708 },
 
     #else
     #error "CMSIS MCU Series is not specified."
@@ -395,6 +411,28 @@ static void ra_i2c_clock_calc(uint32_t baudrate, uint8_t *cks, uint8_t *brh, uin
         *cks = 4;
         *brh = 24;
         *brl = 30;
+    }
+    #elif defined(RA8P1)
+    // RA8P1 PCLKB 100MHz; values mirror RA6M5 ratios scaled (SCLE=0).
+    // r_iic_master FSP driver computes its own divisors from cfg, so these
+    // are only used by the legacy direct-register path which RA8P1 may not
+    // exercise.  Conservative fallback values.
+    if (baudrate >= RA_I2C_CLOCK_MAX) {
+        *cks = 0;
+        *brh = 24;
+        *brl = 49;
+    } else if (baudrate >= 400000) {
+        *cks = 2;
+        *brh = 14;
+        *brl = 31;
+    } else if (baudrate >= 100000) {
+        *cks = 3;
+        *brh = 49;
+        *brl = 61;
+    } else {
+        *cks = 4;
+        *brh = 49;
+        *brl = 61;
     }
     #else
     #error "CMSIS MCU Series is not specified."
@@ -676,6 +714,12 @@ bool ra_i2c_action_execute(R_IIC0_Type *i2c_inst, xaction_t *action, bool repeat
             break;
         }
         if (uwTick - start > timeout_ms) {
+            /* Issue stop condition so the bus returns to idle (BBSY=0).
+             * Without this, BBSY stays set and the next ra_i2c_xaction_start
+             * spins 100,000 iterations waiting for the bus to free. */
+            i2c_inst->ICCR2_b.SP = 1;
+            action->m_error  = RA_I2C_ERROR_BUSY;
+            action->m_status = RA_I2C_STATUS_Stopped;
             break;
         }
     }
