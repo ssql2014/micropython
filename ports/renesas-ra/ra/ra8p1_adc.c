@@ -255,7 +255,8 @@ float ra_adc_read_ftemp(void) {
 }
 
 float ra_adc_read_fref(void) {
-    return (float)ra_adc_read_ch(ADC_REF);
+    uint16_t val = ra_adc_read_ch(ADC_REF);
+    return 3.3f * (float)val / (float)(1u << 12);
 }
 
 void ra_adc_all(uint32_t resolution, uint32_t mask) {
