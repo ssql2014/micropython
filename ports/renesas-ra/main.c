@@ -77,7 +77,11 @@
 #endif
 #include "extmod/modnetwork.h"
 
-#if MICROPY_RA8P1_BRINGUP_DISPLAY_TEST
+#if defined(BSP_MCU_R7KA8P1KFLCAC) && MICROPY_RA8P1_BRINGUP_MIPI_CSI_TEST && MICROPY_RA8P1_BRINGUP_MIPI_CSI_BOOT_PROBE
+extern void ra8p1_mipi_csi_boot_probe(void);
+#endif
+
+#if MICROPY_RA8P1_BRINGUP_DISPLAY_TEST || (defined(BSP_MCU_R7KA8P1KFLCAC) && MICROPY_RA8P1_SAFE_BOOT && MICROPY_RA8P1_SAFE_BOOT_SDRAM)
 #include "common_data.h"
 #endif
 
@@ -86,7 +90,7 @@
 #if MICROPY_RA8P1_BRINGUP_DISPLAY_TEST
 
 #ifndef MICROPY_RA8P1_BRINGUP_DISPLAY_DEMO
-#define MICROPY_RA8P1_BRINGUP_DISPLAY_DEMO (1)
+#define MICROPY_RA8P1_BRINGUP_DISPLAY_DEMO (0)
 #endif
 
 #define RA8P1_DEMO_W   1024u
@@ -355,6 +359,10 @@ int main(void) {
     #endif
     machine_init();
 
+    #if defined(BSP_MCU_R7KA8P1KFLCAC) && MICROPY_RA8P1_BRINGUP_MIPI_CSI_TEST && MICROPY_RA8P1_BRINGUP_MIPI_CSI_BOOT_PROBE
+    ra8p1_mipi_csi_boot_probe();
+    #endif
+
     #if MICROPY_RA8P1_BRINGUP_DISPLAY_TEST
     ra8p1_display_smoke_test();
     #endif
@@ -445,7 +453,17 @@ soft_reset:
     // initial alloc-table sweep across the full heap range trips something
     // (cache coherency? unaligned long-stride access?).  SDRAM is uniform and
     // works — first 5 MB reserved for GLCDC framebuffer, next 2 MB for heap.
-    #if defined(BSP_MCU_R7KA8P1KFLCAC)
+    #if defined(BSP_MCU_R7KA8P1KFLCAC) && MICROPY_RA8P1_SAFE_BOOT
+    #if MICROPY_RA8P1_SAFE_BOOT_SDRAM
+    (void)R_IOPORT_Open(&g_ioport_ctrl, &g_bsp_pin_cfg);
+    R_BSP_SdramInit(true);
+    #endif
+    #if MICROPY_RA8P1_SAFE_BOOT_SDRAM_HEAP
+    gc_init((char *)0x68500000UL, (char *)0x68700000UL);
+    #else
+    gc_init((char *)0x22020000UL, (char *)0x22030000UL);
+    #endif
+    #elif defined(BSP_MCU_R7KA8P1KFLCAC)
     R_BSP_SdramInit(true);
     gc_init((char *)0x68500000UL, (char *)0x68700000UL);
     #else

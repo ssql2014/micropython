@@ -9,7 +9,7 @@
             #define GLCDC_CFG_COLOR_CORRECTION_ENABLE (false)
 
             /* Enable DSI function handling */
-            #if (RA_NOT_DEFINED != RA_NOT_DEFINED)
+            #if defined(MICROPY_RA8P1_BRINGUP_MIPI_DSI_TEST) && MICROPY_RA8P1_BRINGUP_MIPI_DSI_TEST
             #define GLCDC_CFG_USING_DSI
             #endif
 

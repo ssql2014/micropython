@@ -670,6 +670,7 @@ static void ra_i2c_ictei_isr(R_IIC0_Type *i2c_inst) {
     }
 }
 
+#if !(defined(RA8P1_CSI_USE_FSP_IIC) && RA8P1_CSI_USE_FSP_IIC)
 void iic_master_rxi_isr(void) {
     IRQn_Type irq = R_FSP_CurrentIrqGet();
     uint8_t ch = irq_to_ch[(uint32_t)irq];
@@ -697,6 +698,7 @@ void iic_master_eri_isr(void) {
     ra_i2c_iceri_isr(ch_to_R_IIC0_Type(ch));
     R_BSP_IrqStatusClear(irq);
 }
+#endif
 
 bool ra_i2c_action_execute(R_IIC0_Type *i2c_inst, xaction_t *action, bool repeated_start, uint32_t timeout_ms) {
     bool flag = false;

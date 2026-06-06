@@ -353,9 +353,22 @@ HAL_SRC_C += $(HAL_DIR)/ra/fsp/src/r_dac_b/r_dac_b.c
 HAL_SRC_C += $(HAL_DIR)/ra/fsp/src/r_canfd/r_canfd.c
 SRC_C := $(filter-out extint.c flash.c flashbdev.c storage.c modrenesas.c,$(SRC_C))
 SRC_C += machine_can.c ra8p1_display.c
+ifeq ($(RA8P1_BRINGUP_MIPI_CSI_TEST), 1)
+SRC_C += ra8p1_mipi_csi.c
+endif
+ifeq ($(RA8P1_BRINGUP_CEU_TEST), 1)
+SRC_C += ra8p1_ceu.c
+endif
 SRC_C += lib/SEGGER_RTT/SEGGER_RTT.c lib/SEGGER_RTT/SEGGER_RTT_printf.c
 INC += -I$(TOP)/ports/renesas-ra/lib/SEGGER_RTT
 SRC_O += setjmp_arm.o
+RA8P1_STARTUP_FLAGS = \
+	-DMICROPY_RA8P1_SAFE_BOOT=$(RA8P1_SAFE_BOOT) \
+	-DMICROPY_RA8P1_SAFE_BOOT_CLOCKS=$(RA8P1_SAFE_BOOT_CLOCKS) \
+	-DMICROPY_RA8P1_SAFE_BOOT_SDRAM=$(RA8P1_SAFE_BOOT_SDRAM) \
+	-DMICROPY_RA8P1_SAFE_BOOT_SDRAM_HEAP=$(RA8P1_SAFE_BOOT_SDRAM_HEAP)
+$(BUILD)/$(STARTUP_FILE): CFLAGS += $(RA8P1_STARTUP_FLAGS)
+$(BUILD)/$(SYSTEM_FILE): CFLAGS += $(RA8P1_STARTUP_FLAGS)
 endif
 
 ifeq ($(MICROPY_HW_ENABLE_RNG),1)

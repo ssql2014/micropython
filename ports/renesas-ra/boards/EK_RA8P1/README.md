@@ -22,6 +22,7 @@ MicroPython running on the Renesas **EK-RA8P1** evaluation kit
 | DAC | `machine.DAC` | ✅ compiled, awaiting board runtime test |
 | CAN/CANFD | `machine.CAN` | ✅ compiled, awaiting board runtime test |
 | Display | `ra8p1_display` module | ✅ runtime validated (1024×600 XRGB8888) |
+| CEU/DVP camera | `ra8p1_ceu` module | ✅ gated bring-up, OV5640 single-frame capture validated |
 
 > **Note:** The on-board J-Link OB CDC/VCOM bridge delivers no bytes to the
 > host. This is a board-level hardware issue (confirmed with Renesas factory
@@ -120,6 +121,67 @@ See [`examples/`](examples/) for per-peripheral Python scripts:
 | `dac_write.py` | DAC_B write + readback via ADC |
 | `canfd_loopback.py` | CANFD send/recv |
 | `display_demo.py` | GLCDC framebuffer paint |
+
+---
+
+## CEU/DVP camera bring-up
+
+The EK-RA8P1 CEU driver is currently a gated board bring-up module. It is not
+compiled into the default image unless `RA8P1_BRINGUP_CEU_TEST=1` is set.
+
+```sh
+cd ports/renesas-ra
+make BOARD=EK_RA8P1 BUILD=build-EK_RA8P1-ceu-fullclocks \
+    RA8P1_BRINGUP_CEU_TEST=1 \
+    RA8P1_SAFE_BOOT_CLOCKS=1 \
+    RA8P1_SAFE_BOOT_SDRAM=1 \
+    RA8P1_SAFE_BOOT_SDRAM_HEAP=0 \
+    -j8
+```
+
+Hardware route for CEU/DVP:
+
+| Item | Required state |
+|---|---|
+| Camera connector | OV5640 module on `J35` |
+| `J41` | Open/removed |
+| U15 / PI4IOE5V6408, I2C `0x43` | bit5 driven output-low: `DIR=0x20`, `OUT=0x00`, `OE=0xdf` |
+
+`ra8p1_ceu.init()`, `ra8p1_ceu.camera_open()`, and `ra8p1_ceu.capture()`
+select the CEU route in software before touching the camera. This matters
+after MIPI CSI/DSI tests: the physical `SW4-6` switch can be overridden when
+U15 bit5 is configured as an enabled output.
+
+The CEU/DVP route shares several MCU pins with the parallel LCD path
+(`P09_02` and `P11_02`..`P11_04`). Continuous `ra8p1_ceu.live()` capture can
+therefore corrupt the current parallel GLCDC display output while CEU is using
+those pins. Use `ra8p1_ceu.snapshot_display()` for a low-rate proof that
+captures one frame, stops CEU/XCLK, restores the shared pins to
+`LCD_GRAPHICS`, and then flips the framebuffer. True simultaneous camera
+preview needs a display route that does not share the CEU DVP pins, such as
+the MIPI-DSI display path.
+
+Minimal runtime smoke:
+
+```python
+import ra8p1_ceu as ceu
+
+print(ceu.camera_id())       # expected: (86, 64)
+c = ceu.capture(3000)
+print(c["last_capture_start_err"], c["capture_ready"], c["sample_nonzero"])
+ceu.snapshot_display(3000)   # one-frame display proof, not realtime preview
+b = ceu.buffer()
+print(len(b), b[0], b[1])    # expected length: 614400 bytes
+```
+
+Validated board result from the current bring-up:
+
+```text
+SMOKE12_ID (86, 64)
+SMOKE12_SW 0 32 0 223 0
+SMOKE12_CAP 0 1 8 16777216 3079 2453830625 0
+SMOKE12_BUF 614400 [0, 252, 0, 252, 0, 252, 0, 252]
+```
 
 ---
 
